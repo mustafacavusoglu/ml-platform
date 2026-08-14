@@ -1,6 +1,6 @@
 node_modules/
 out/
-*.vsix
+/*.vsix
 *.csv
 .DS_Store
 .vscode/settings.json
