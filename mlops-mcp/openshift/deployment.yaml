@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-readmes-mcp
+  labels:
+    app: mlops-readmes-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlops-readmes-mcp
+  template:
+    metadata:
+      labels:
+        app: mlops-readmes-mcp
+    spec:
+      containers:
+        - name: mlops-readmes-mcp
+          image: image-registry.openshift-image-registry.svc:5000/CHANGE_NAMESPACE/mlops-readme-mcp:latest
+          imagePullPolicy: Always
+          command:
+            - mlops-readme-mcp
+          args:
+            - --config
+            - /app/config/repos.yml
+            - --transport
+            - http
+            - --port
+            - "8080"
+            - --host
+            - 0.0.0.0
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-readmes-github-token
+                  key: token
+                  optional: true
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: mlops-readmes-config

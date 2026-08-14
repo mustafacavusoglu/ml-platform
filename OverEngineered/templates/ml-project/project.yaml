@@ -1,0 +1,11 @@
+# Canonical project metadata (mirrors catalog entry after scaffold)
+apiVersion: mlops.platform/v1alpha1
+kind: Project
+metadata:
+  name: REPLACE_ME
+  team: default
+  owners: []
+spec:
+  description: ""
+  profile: full
+  environment: dev

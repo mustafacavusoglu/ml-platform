@@ -1,0 +1,14 @@
+MLOps main platform onboarding complete.
+
+Platform: {{ .Values.platform.name }}
+Environment: {{ .Values.platform.environment }}
+
+Namespaces created:
+{{- range $key, $ns := .Values.namespaces }}
+  - {{ $ns.name }}
+{{- end }}
+
+Next steps:
+  1. Install the App of Apps root application from projects/bootstrap/
+  2. Onboard users with: helm install <user> ./onBoardingCharts/user -f values-<user>.yaml
+  3. Configure image pull secrets if using a private registry

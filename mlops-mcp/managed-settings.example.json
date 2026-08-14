@@ -1,0 +1,13 @@
+{
+  "allowedMcpServers": [
+    {
+      "serverCommand": [
+        "uvx",
+        "mlops-readme-mcp",
+        "--config-url",
+        "https://config.example.com/mlops/repos.yml"
+      ]
+    }
+  ],
+  "deniedMcpServers": []
+}

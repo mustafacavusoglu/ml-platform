@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "mlops-readmes": {
+      "type": "http",
+      "url": "https://mlops-readmes-mcp.apps.example.com/mcp",
+      "tools": [
+        "list_repositories",
+        "get_repository_readmes",
+        "refresh_repository_readmes"
+      ]
+    }
+  }
+}

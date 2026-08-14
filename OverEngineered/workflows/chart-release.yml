@@ -1,0 +1,147 @@
+name: Chart Release
+
+# Packages and publishes onBoardingCharts (and platform charts) to GHCR as OCI Helm charts.
+# Triggers on chart changes to main, version tags, or manual dispatch.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "onBoardingCharts/**"
+      - "projects/charts/**"
+      - ".github/workflows/chart-release.yml"
+    tags:
+      - "charts-v*"
+  pull_request:
+    paths:
+      - "onBoardingCharts/**"
+      - "projects/charts/**"
+      - ".github/workflows/chart-release.yml"
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push charts to GHCR (ignored on PR)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  OCI_REGISTRY: ghcr.io
+  # Charts land under: oci://ghcr.io/<owner>/charts/<chart-name>
+  HELM_VERSION: v3.14.4
+
+jobs:
+  lint:
+    name: Lint charts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Lint onboarding + platform charts
+        run: |
+          set -euo pipefail
+          charts=(
+            onBoardingCharts/main
+            onBoardingCharts/user
+            projects/charts/mlflow
+            projects/charts/model-serving
+            projects/charts/monitoring
+            projects/app-of-apps
+          )
+          for c in "${charts[@]}"; do
+            echo "::group::helm lint $c"
+            helm lint "$c"
+            helm template "lint-$(basename "$c")" "$c" >/dev/null
+            echo "::endgroup::"
+          done
+
+  release:
+    name: Package & push OCI
+    needs: lint
+    if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Resolve owner / registry path
+        id: meta
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          echo "oci_repo=${{ env.OCI_REGISTRY }}/${owner}/charts" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.OCI_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package and push charts
+        env:
+          OCI_REPO: ${{ steps.meta.outputs.oci_repo }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist/charts
+
+          charts=(
+            onBoardingCharts/main
+            onBoardingCharts/user
+            projects/charts/mlflow
+            projects/charts/model-serving
+            projects/charts/monitoring
+          )
+
+          # Optional version bump via tag charts-vX.Y.Z
+          version_flag=()
+          if [[ "${GITHUB_REF_TYPE}" == "tag" && "${GITHUB_REF_NAME}" == charts-v* ]]; then
+            ver="${GITHUB_REF_NAME#charts-v}"
+            version_flag=(--version "${ver}")
+            echo "Using release version from tag: ${ver}"
+          fi
+
+          for c in "${charts[@]}"; do
+            name="$(basename "$c")"
+            echo "::group::package ${name}"
+            helm package "$c" -d dist/charts "${version_flag[@]}"
+            echo "::endgroup::"
+          done
+
+          shopt -s nullglob
+          for pkg in dist/charts/*.tgz; do
+            echo "::group::push $(basename "$pkg")"
+            helm push "$pkg" "oci://${OCI_REPO}"
+            echo "::endgroup::"
+          done
+
+          echo "## Published charts" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Registry: \`oci://${OCI_REPO}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for pkg in dist/charts/*.tgz; do
+            echo "- \`$(basename "$pkg")\`" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+      - name: Upload chart packages (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm-charts
+          path: dist/charts/*.tgz
+          if-no-files-found: error

@@ -1,0 +1,14 @@
+{{- range $key, $ns := .Values.namespaces }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $ns.name }}
+  labels:
+    {{- include "mlops-main.namespaceLabels" $ | nindent 4 }}
+    {{- with $ns.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    mlops.platform/onboarded-by: mlops-main
+{{- end }}

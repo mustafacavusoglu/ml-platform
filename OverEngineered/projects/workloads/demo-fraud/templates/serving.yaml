@@ -1,0 +1,70 @@
+{{- if .Values.components.serving }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ml-project.name" . }}-serving
+  namespace: {{ include "ml-project.namespace" . }}
+  labels:
+    {{- include "ml-project.labels" . | nindent 4 }}
+    mlops.platform/component: serving
+spec:
+  replicas: {{ .Values.serving.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "ml-project.name" . }}
+      mlops.platform/component: serving
+  template:
+    metadata:
+      labels:
+        {{- include "ml-project.labels" . | nindent 8 }}
+        mlops.platform/component: serving
+    spec:
+      serviceAccountName: {{ include "ml-project.serviceAccountName" . }}
+      containers:
+        - name: serving
+          image: {{ .Values.image.serving | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.serving.port }}
+          env:
+            - name: MODEL_DIR
+              value: {{ .Values.serving.modelDir | quote }}
+            - name: PORT
+              value: {{ .Values.serving.port | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "ml-project.name" . }}-config
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources.serving | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ml-project.name" . }}-serving
+  namespace: {{ include "ml-project.namespace" . }}
+  labels:
+    {{- include "ml-project.labels" . | nindent 4 }}
+    mlops.platform/component: serving
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.serving.port }}
+      targetPort: http
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "ml-project.name" . }}
+    mlops.platform/component: serving
+{{- end }}

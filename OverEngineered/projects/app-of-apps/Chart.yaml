@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mlops-app-of-apps
+description: Helm wrapper that renders the Argo CD root Application (App of Apps)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

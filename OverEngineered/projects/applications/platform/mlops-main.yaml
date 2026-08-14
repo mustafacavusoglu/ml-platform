@@ -1,0 +1,31 @@
+# Deploys cluster foundations via onBoardingCharts/main
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlops-main
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: mlops-platform
+    mlops.platform/layer: platform
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mlops
+  source:
+    repoURL: https://github.com/example/mlops-platform.git
+    targetRevision: HEAD
+    path: onBoardingCharts/main
+    helm:
+      releaseName: mlops-main
+      valueFiles:
+        - ../../projects/environments/dev/main-values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

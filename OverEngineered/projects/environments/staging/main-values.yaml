@@ -1,0 +1,21 @@
+platform:
+  name: mlops-platform
+  environment: staging
+
+resourceQuota:
+  enabled: true
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "200"
+    persistentvolumeclaims: "50"
+
+networkPolicy:
+  enabled: true
+  defaultDeny: true
+
+argoProject:
+  create: true
+  name: mlops

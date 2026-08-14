@@ -1,0 +1,29 @@
+apiVersion: mlops.platform/v1alpha1
+kind: Project
+metadata:
+  name: demo-fraud
+  team: risk-ml
+  owners:
+    - risk-ml@example.com
+  labels:
+    domain: fraud
+spec:
+  description: "Demo fraud detection project for platform smoke tests"
+  profile: full
+  environment: dev
+  resources:
+    cpu: "2"
+    memory: 4Gi
+    gpu: "0"
+  components:
+    training: true
+    serving: true
+    notebook: false
+    mlflow: true
+  image:
+    # For local kind tests, bootstrap may rewrite these to local images
+    training: ghcr.io/example/mlops-platform/training:latest
+    serving: ghcr.io/example/mlops-platform/serving:latest
+  schedule:
+    enabled: false
+    cron: "0 3 * * *"

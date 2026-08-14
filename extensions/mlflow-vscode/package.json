@@ -1,0 +1,224 @@
+{
+  "name": "mlflow-runs-openshift-ai",
+  "displayName": "MLflow Runs for OpenShift AI",
+  "description": "Browse and compare MLflow experiment runs from an OpenShift AI namespace.",
+  "version": "0.1.0",
+  "publisher": "openshift-ai-extensions",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:mlflowRuns",
+    "onCommand:mlflow.refresh",
+    "onCommand:mlflow.compareRuns",
+    "onCommand:mlflow.signIn",
+    "onCommand:mlflow.signOut",
+    "onCommand:mlflow.openTrackingUi",
+    "onCommand:mlflow.useDummyData"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mlflow",
+          "title": "MLflow",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mlflow": [
+        {
+          "id": "mlflowRuns",
+          "name": "MLflow Runs",
+          "contextualTitle": "MLflow Runs"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "mlflow.refresh",
+        "title": "MLflow: Refresh Runs",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "mlflow.compareRuns",
+        "title": "MLflow: Compare Runs",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "mlflow.signIn",
+        "title": "MLflow: Sign in to OpenShift",
+        "icon": "$(sign-in)"
+      },
+      {
+        "command": "mlflow.signOut",
+        "title": "MLflow: Sign Out"
+      },
+      {
+        "command": "mlflow.openTrackingUi",
+        "title": "MLflow: Open Tracking UI"
+      },
+      {
+        "command": "mlflow.useDummyData",
+        "title": "MLflow: Toggle Dummy Data",
+        "icon": "$(beaker)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "mlflow.refresh",
+          "when": "view == mlflowRuns",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mlflow.signIn",
+          "when": "view == mlflowRuns",
+          "group": "navigation@2"
+        },
+        {
+          "command": "mlflow.useDummyData",
+          "when": "view == mlflowRuns",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "mlflow.compareRuns",
+          "when": "view == mlflowRuns && viewItem == mlflowRun",
+          "group": "inline@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mlflow.refresh",
+          "when": "view == mlflowRuns"
+        },
+        {
+          "command": "mlflow.compareRuns",
+          "when": "view == mlflowRuns"
+        },
+        {
+          "command": "mlflow.signIn",
+          "when": "view == mlflowRuns"
+        },
+        {
+          "command": "mlflow.useDummyData",
+          "when": "view == mlflowRuns"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MLflow",
+      "properties": {
+        "mlflow.trackingUri": {
+          "type": "string",
+          "default": "",
+          "description": "MLflow Tracking HTTP API base URL. Defaults to MLFLOW_TRACKING_URI."
+        },
+        "mlflow.namespace": {
+          "type": "string",
+          "default": "",
+          "description": "OpenShift project/namespace whose name is used as the MLflow experiment name. Defaults to KUBERNETES_NAMESPACE or POD_NAMESPACE."
+        },
+        "mlflow.appsDomain": {
+          "type": "string",
+          "default": "",
+          "description": "OpenShift apps domain used to derive the MLflow route when trackingUri is not configured, for example apps.example.com."
+        },
+        "mlflow.cookieName": {
+          "type": "string",
+          "default": "openshift-session-token",
+          "description": "OpenShift oauth-proxy session cookie name sent to the MLflow API."
+        },
+        "mlflow.authMode": {
+          "type": "string",
+          "enum": [
+            "secret",
+            "oauth",
+            "basic"
+          ],
+          "default": "secret",
+          "enumDescriptions": [
+            "Read MLflow credentials and tracking URI from a Kubernetes secret.",
+            "Use OpenShift oauth-proxy cookie authentication.",
+            "Use configured MLflow username and password with HTTP Basic Auth."
+          ]
+        },
+        "mlflow.username": {
+          "type": "string",
+          "default": "",
+          "description": "MLflow username when mlflow.authMode is basic."
+        },
+        "mlflow.password": {
+          "type": "string",
+          "default": "",
+          "description": "MLflow password when mlflow.authMode is basic."
+        },
+        "mlflow.secretName": {
+          "type": "string",
+          "default": "mlflow-secret",
+          "description": "Kubernetes secret containing MLflow username, password, and service URI."
+        },
+        "mlflow.secretUsernameKey": {
+          "type": "string",
+          "default": "username",
+          "description": "Secret key containing the MLflow username."
+        },
+        "mlflow.secretPasswordKey": {
+          "type": "string",
+          "default": "password",
+          "description": "Secret key containing the MLflow password."
+        },
+        "mlflow.secretUriKey": {
+          "type": "string",
+          "default": "service_uri",
+          "description": "Secret key containing the MLflow tracking service URI."
+        },
+        "mlflow.kubernetesApiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Kubernetes API URL. Defaults to KUBERNETES_SERVICE_HOST/PORT."
+        },
+        "mlflow.serviceAccountTokenPath": {
+          "type": "string",
+          "default": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+          "description": "Path to the pod service account token used to read the MLflow secret."
+        },
+        "mlflow.maxResults": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Maximum number of runs loaded per experiment."
+        },
+        "mlflow.useDummyData": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show sample runs without contacting MLflow or OpenShift. Useful for previewing the extension UI."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node --test out/test/client.test.js out/test/dummyData.test.js out/test/k8sSecretAuthUtils.test.js out/test/mlflowModel.test.js out/test/urls.test.js",
+    "package": "npm run compile && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "^5.5.4"
+  }
+}

@@ -1,0 +1,67 @@
+{{- if .Values.rbac.create }}
+{{- $ns := include "mlops-user.namespace" . }}
+{{- $user := include "mlops-user.name" . }}
+{{- range .Values.rbac.roles }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $user }}-{{ . }}
+  namespace: {{ $ns }}
+  labels:
+    {{- include "mlops-user.labels" $ | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ . }}
+subjects:
+  - kind: {{ $.Values.user.subjectKind }}
+    name: {{ $user | quote }}
+    {{- if eq $.Values.user.subjectKind "ServiceAccount" }}
+    namespace: {{ $ns }}
+    {{- else }}
+    apiGroup: rbac.authorization.k8s.io
+    {{- end }}
+{{- end }}
+---
+# Workload SA can manage pods/jobs in the tenant namespace (training / notebooks)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: mlops-workload
+  namespace: {{ $ns }}
+  labels:
+    {{- include "mlops-user.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["kubeflow.org"]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["serving.kserve.io"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: mlops-workload
+  namespace: {{ $ns }}
+  labels:
+    {{- include "mlops-user.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mlops-workload
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "mlops-user.serviceAccountName" . }}
+    namespace: {{ $ns }}
+{{- end }}

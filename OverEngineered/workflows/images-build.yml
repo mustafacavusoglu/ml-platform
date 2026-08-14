@@ -1,0 +1,141 @@
+name: Images Build
+
+# Builds platform images under images/. Pushes to GHCR on main/tags; PR builds only.
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "images/**"
+      - ".github/workflows/images-build.yml"
+    tags:
+      - "images-v*"
+      - "v*"
+  pull_request:
+    paths:
+      - "images/**"
+      - ".github/workflows/images-build.yml"
+  workflow_dispatch:
+    inputs:
+      images:
+        description: "Comma-separated image names (empty = all)"
+        required: false
+        default: ""
+      push:
+        description: "Push images to GHCR"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  discover:
+    name: Discover images
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build matrix
+        id: set
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ github.event.inputs.images }}" ]]; then
+            IFS=',' read -ra RAW <<< "${{ github.event.inputs.images }}"
+            imgs=()
+            for i in "${RAW[@]}"; do
+              i="$(echo "$i" | xargs)"
+              [[ -n "$i" ]] && imgs+=("$i")
+            done
+          else
+            imgs=()
+            for d in images/*/; do
+              [[ -f "${d}Dockerfile" ]] || continue
+              imgs+=("$(basename "$d")")
+            done
+          fi
+
+          # On PR/push path filter: still build all discovered; optional future: only changed
+          json=$(printf '%s\n' "${imgs[@]}" | jq -R . | jq -sc .)
+          echo "matrix=${json}" >> "$GITHUB_OUTPUT"
+          echo "Images: ${json}"
+
+  build:
+    name: Build ${{ matrix.image }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Image metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          name="${{ matrix.image }}"
+          image_base="${{ env.REGISTRY }}/${owner}/mlops-platform/${name}"
+
+          sha_short="${GITHUB_SHA::7}"
+          tags=("${image_base}:sha-${sha_short}")
+
+          if [[ "${GITHUB_REF_TYPE}" == "branch" && ( "${GITHUB_REF_NAME}" == "main" || "${GITHUB_REF_NAME}" == "master" ) ]]; then
+            tags+=("${image_base}:latest")
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            t="${GITHUB_REF_NAME}"
+            t="${t#images-}"
+            t="${t#v}"
+            tags+=("${image_base}:${t}")
+            tags+=("${image_base}:latest")
+          fi
+
+          # CSV for docker/metadata convenience
+          IFS=,
+          echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
+          echo "image_base=${image_base}" >> "$GITHUB_OUTPUT"
+          echo "labels=org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY},org.opencontainers.image.revision=${GITHUB_SHA},org.opencontainers.image.title=mlops-${name}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.push)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: images/${{ matrix.image }}
+          file: images/${{ matrix.image }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.push) }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          platforms: linux/amd64
+
+      - name: Summary
+        run: |
+          echo "### ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tags: \`${{ steps.meta.outputs.tags }}\`" >> "$GITHUB_STEP_SUMMARY"

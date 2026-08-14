@@ -1,0 +1,12 @@
+.DS_Store
+.venv/
+**/.venv/
+.cache/
+**/.cache/
+node_modules/
+out/
+*.csv
+*.pyc
+__pycache__/
+.vscode/settings.json
+extensions/*/.git

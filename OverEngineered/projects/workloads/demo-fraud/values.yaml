@@ -1,0 +1,66 @@
+# Generated from catalog — safe to customize after scaffold.
+project:
+  name: demo-fraud
+  team: risk-ml
+  description: "Demo fraud detection project for platform smoke tests"
+  environment: dev
+  profile: full
+namespace:
+  # defaults to proj-<project.name>
+  name: ""
+  create: true
+components:
+  training: true
+  serving: true
+  notebook: false
+  mlflow: true
+image:
+  training: mlops/training:local
+  serving: mlops/serving:local
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+resources:
+  training:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  serving:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+serving:
+  replicaCount: 1
+  port: 8080
+  modelDir: /models
+training:
+  # One-shot Job; set schedule.enabled for CronJob
+  command:
+    - python
+    - -c
+    - print("local training ok")
+  env: {}
+  # Restart policy for Job pods
+  restartPolicy: Never
+  backoffLimit: 2
+schedule:
+  enabled: false
+  cron: "0 3 * * *"
+# When true, annotate with MLflow tracking URI (service in mlops-shared)
+mlflow:
+  trackingUri: http://mlops-mlflow-mlflow.mlops-shared.svc.cluster.local:5000
+serviceAccount:
+  create: true
+  name: workload
+rbac:
+  create: true
+networkPolicy:
+  enabled: true
+  allowToNamespaces:
+    - mlops-shared
+    - mlops-system

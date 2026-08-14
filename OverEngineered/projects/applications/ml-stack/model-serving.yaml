@@ -1,0 +1,32 @@
+# Sample model-serving deployment using platform image
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlops-model-serving
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: mlops-platform
+    mlops.platform/layer: ml-stack
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mlops
+  source:
+    repoURL: https://github.com/example/mlops-platform.git
+    targetRevision: HEAD
+    path: projects/charts/model-serving
+    helm:
+      releaseName: mlops-model-serving
+      valueFiles:
+        - ../../environments/dev/model-serving-values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops-shared
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

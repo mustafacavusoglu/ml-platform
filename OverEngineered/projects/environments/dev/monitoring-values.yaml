@@ -1,0 +1,11 @@
+# Dev monitoring is intentionally minimal — enable components as needed
+enabled: true
+
+prometheus:
+  enabled: false
+
+grafana:
+  enabled: false
+
+# Placeholder ConfigMap-only chart until a full stack is wired
+message: "Monitoring stack not yet enabled in dev"

@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlflow-dummy-trainer
+  namespace: baklava-ai
+data:
+  train.py: |
+    import os
+    import random
+    import mlflow
+    import mlflow.sklearn
+    from sklearn.datasets import make_classification
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.metrics import accuracy_score, f1_score
+    from sklearn.model_selection import train_test_split
+
+    experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "baklava-ai")
+    mlflow.set_experiment(experiment_name)
+
+    X, y = make_classification(
+        n_samples=1200,
+        n_features=18,
+        n_informative=10,
+        n_redundant=4,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.3, random_state=42
+    )
+
+    for run_number in range(1, 9):
+        n_estimators = random.choice([50, 100, 200])
+        max_depth = random.choice([4, 6, 8])
+        min_samples_split = random.choice([2, 4, 6])
+
+        with mlflow.start_run(run_name=f"dummy-train-{run_number:02d}"):
+            model = RandomForestClassifier(
+                n_estimators=n_estimators,
+                max_depth=max_depth,
+                min_samples_split=min_samples_split,
+                random_state=run_number,
+            )
+            model.fit(X_train, y_train)
+            predictions = model.predict(X_test)
+
+            mlflow.log_params(
+                {
+                    "model": "random_forest",
+                    "n_estimators": n_estimators,
+                    "max_depth": max_depth,
+                    "min_samples_split": min_samples_split,
+                }
+            )
+            mlflow.log_metrics(
+                {
+                    "accuracy": round(accuracy_score(y_test, predictions), 4),
+                    "f1": round(f1_score(y_test, predictions), 4),
+                }
+            )
+            mlflow.set_tag("dataset", "dummy-classification")
+            mlflow.set_tag("owner", "crc-local")
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlflow-dummy-runs
+  namespace: baklava-ai
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: mlflow-dummy-runs
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: trainer
+          image: python:3.11-slim
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              pip install --no-cache-dir mlflow==2.15.0 scikit-learn
+              python /tmp/train.py
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PIP_NO_CACHE_DIR
+              value: "1"
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow:5000
+            - name: MLFLOW_TRACKING_USERNAME
+              value: mlflow
+            - name: MLFLOW_TRACKING_PASSWORD
+              value: mlflow-password
+            - name: MLFLOW_EXPERIMENT_NAME
+              value: baklava-ai
+          volumeMounts:
+            - name: script
+              mountPath: /tmp/train.py
+              subPath: train.py
+      volumes:
+        - name: script
+          configMap:
+            name: mlflow-dummy-trainer

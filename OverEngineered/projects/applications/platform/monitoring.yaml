@@ -1,0 +1,34 @@
+# Placeholder Application for platform monitoring stack (Prometheus/Grafana etc.)
+# Point chart to your preferred operator or disable until ready.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mlops-monitoring
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: mlops-platform
+    mlops.platform/layer: platform
+  annotations:
+    # Prevent sync until chart path is ready
+    argocd.argoproj.io/sync-wave: "10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: mlops
+  source:
+    repoURL: https://github.com/example/mlops-platform.git
+    targetRevision: HEAD
+    path: projects/charts/monitoring
+    helm:
+      releaseName: mlops-monitoring
+      valueFiles:
+        - ../../environments/dev/monitoring-values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mlops-monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
