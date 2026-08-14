@@ -1,5 +1,7 @@
 # MLflow Runs for OpenShift AI
 
+![MLflow Code](mlflow-code.png)
+
 OpenShift AI workbench veya code-server üzerinde çalışan VS Code extension'ıdır. Aktif namespace/project adıyla eşleşen MLflow experiment'indeki run'ları listeler, seçilen run'ları yan yana karşılaştırır ve metrik değerlerini görselleştirir.
 
 ## Nasıl Çalışır?
