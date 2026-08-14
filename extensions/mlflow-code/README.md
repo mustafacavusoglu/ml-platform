@@ -74,6 +74,42 @@ http://mlflow:5000
 http://mlflow.<namespace>.svc.cluster.local:5000
 ```
 
+### Secret adı ve key adları farklıysa
+
+Varsayılan değerler:
+
+```text
+secret adı: mlflow-secret
+username key: username
+password key: password
+service URI key: service_uri
+```
+
+Örneğin secret adı `mlflow-creds`, key adları da `MLFLOW_USER`, `MLFLOW_PASS`, `MLFLOW_URI` ise extension ayarları şöyle olmalıdır:
+
+```json
+{
+  "mlflow.authMode": "secret",
+  "mlflow.namespace": "baklava-ai",
+  "mlflow.secretName": "mlflow-creds",
+  "mlflow.secretUsernameKey": "MLFLOW_USER",
+  "mlflow.secretPasswordKey": "MLFLOW_PASS",
+  "mlflow.secretUriKey": "MLFLOW_URI"
+}
+```
+
+Bu durumda Secret şu şekilde oluşturulabilir:
+
+```bash
+oc create secret generic mlflow-creds \
+  -n baklava-ai \
+  --from-literal=MLFLOW_USER=mlflow \
+  --from-literal=MLFLOW_PASS=mlflow-password \
+  --from-literal=MLFLOW_URI=http://mlflow:5000
+```
+
+`secretUsernameKey`, `secretPasswordKey` ve `secretUriKey` yalnızca secret modunda kullanılır. `basic` modda bunun yerine `mlflow.username` ve `mlflow.password` ayarları kullanılır.
+
 ## Extension Kurulumu
 
 ### VSIX Paketi Oluşturma
