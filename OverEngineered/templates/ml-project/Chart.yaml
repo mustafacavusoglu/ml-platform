@@ -1,6 +1,0 @@
-apiVersion: v2
-name: ml-project
-description: Scaffolded ML project chart (training Job, optional serving, config)
-type: application
-version: 0.1.0
-appVersion: "0.1.0"

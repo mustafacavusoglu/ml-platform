@@ -1,6 +1,0 @@
-apiVersion: v2
-name: mlflow
-description: Lightweight MLflow tracking server for MLOps platform
-type: application
-version: 0.1.0
-appVersion: "2.14.3"

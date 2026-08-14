@@ -1,9 +1,0 @@
-{
-  "servers": {
-    "mlops-readmes": {
-      "type": "stdio",
-      "command": "./.venv/bin/mlops-readme-mcp",
-      "args": ["--config", "./repos.yml"]
-    }
-  }
-}
