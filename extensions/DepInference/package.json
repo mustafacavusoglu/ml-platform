@@ -1,0 +1,221 @@
+{
+  "name": "depinference-openshift-ai",
+  "displayName": "DepInference — Deploy & Inference Playground",
+  "description": "Submit model deployments to the MLOps GitOps repo from an OpenShift AI workbench and test them in an inference playground.",
+  "version": "0.1.0",
+  "publisher": "openshift-ai-extensions",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:depinference.deployments",
+    "onCommand:depinference.newDeployment",
+    "onCommand:depinference.refresh",
+    "onCommand:depinference.playground",
+    "onCommand:depinference.openPr",
+    "onCommand:depinference.setPat",
+    "onCommand:depinference.clearPat",
+    "onCommand:depinference.useDummyData"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "depinference",
+          "title": "DepInference",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "depinference": [
+        {
+          "id": "depinference.deployments",
+          "name": "Deployments",
+          "contextualTitle": "DepInference"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "depinference.newDeployment",
+        "title": "New Deployment",
+        "icon": "$(rocket)"
+      },
+      {
+        "command": "depinference.refresh",
+        "title": "Refresh Deployments",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "depinference.playground",
+        "title": "Open Inference Playground",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "depinference.openPr",
+        "title": "Open Pull Request",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "depinference.setPat",
+        "title": "Set Azure DevOps PAT",
+        "icon": "$(key)"
+      },
+      {
+        "command": "depinference.clearPat",
+        "title": "Clear Azure DevOps PAT"
+      },
+      {
+        "command": "depinference.useDummyData",
+        "title": "Toggle Dummy Data",
+        "icon": "$(beaker)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "depinference.newDeployment",
+          "when": "view == depinference.deployments",
+          "group": "navigation@1"
+        },
+        {
+          "command": "depinference.refresh",
+          "when": "view == depinference.deployments",
+          "group": "navigation@2"
+        },
+        {
+          "command": "depinference.setPat",
+          "when": "view == depinference.deployments",
+          "group": "navigation@3"
+        },
+        {
+          "command": "depinference.useDummyData",
+          "when": "view == depinference.deployments",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "depinference.playground",
+          "when": "view == depinference.deployments && viewItem == deploymentOnline",
+          "group": "inline@1"
+        },
+        {
+          "command": "depinference.openPr",
+          "when": "view == depinference.deployments && viewItem =~ /deployment/",
+          "group": "inline@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "depinference.playground",
+          "when": "false"
+        },
+        {
+          "command": "depinference.openPr",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DepInference",
+      "properties": {
+        "depinference.azure.repoUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Azure DevOps repository URL, for example https://tfs.company.local/DefaultCollection/MainProject/_git/MainRepo. Defaults to DEPINFERENCE_AZURE_REPO_URL or AZURE_DEVOPS_REPO_URL."
+        },
+        "depinference.azure.apiVersion": {
+          "type": "string",
+          "default": "7.0",
+          "description": "Azure DevOps REST API version. Use 6.0 or newer; older on-prem servers may need 6.0."
+        },
+        "depinference.azure.targetBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Branch the deployment pull request targets."
+        },
+        "depinference.azure.valuesPath": {
+          "type": "string",
+          "default": "Projects/MainProject/values.yaml",
+          "description": "Repository path of the Helm values file updated by deployments."
+        },
+        "depinference.namespace": {
+          "type": "string",
+          "default": "",
+          "description": "OpenShift project/namespace of the workbench. Falls back to the mlflow.namespace setting, then KUBERNETES_NAMESPACE or POD_NAMESPACE."
+        },
+        "depinference.workbenchName": {
+          "type": "string",
+          "default": "",
+          "description": "OpenShift AI workbench name used to derive the project/experiment name. Defaults to the WORKBENCH_NAME environment variable."
+        },
+        "depinference.appsDomain": {
+          "type": "string",
+          "default": "",
+          "description": "OpenShift apps domain used to derive the predictor route URL. Falls back to mlflow.appsDomain, then OPENSHIFT_APPS_DOMAIN."
+        },
+        "depinference.kubernetesApiUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Kubernetes API URL. Falls back to mlflow.kubernetesApiUrl, then KUBERNETES_SERVICE_HOST/PORT."
+        },
+        "depinference.serviceAccountTokenPath": {
+          "type": "string",
+          "default": "/var/run/secrets/kubernetes.io/serviceaccount/token",
+          "description": "Path to the pod service account token used to watch InferenceServices. Falls back to mlflow.serviceAccountTokenPath."
+        },
+        "depinference.resourcePresets": {
+          "type": "object",
+          "default": {},
+          "description": "Overrides for the resource presets offered in the deployment form. Keys are preset names (small, medium, large, xlarge, or custom); values are objects with cpu, memory, and disk, for example {\"small\":{\"cpu\":\"2\",\"memory\":\"4Gi\",\"disk\":\"20Gi\"}}.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "cpu": { "type": "string" },
+              "memory": { "type": "string" },
+              "disk": { "type": "string" }
+            },
+            "required": ["cpu", "memory", "disk"]
+          }
+        },
+        "depinference.imageCatalog": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Batch scoring images offered in the deployment form, for example [\"nexus.company.local/batch-score:1.2\"]."
+        },
+        "depinference.useDummyData": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run the whole flow with sample data: no MLflow, Azure DevOps, or cluster access is attempted."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./ && node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "pretest": "npm run compile",
+    "test": "node --test out/test/*.test.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.4"
+  }
+}
