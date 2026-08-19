@@ -48,6 +48,8 @@ npm run package
 
 VSIX dosyası `depinference-openshift-ai-0.1.0.vsix` olarak üretilir.
 
+Hazır AMD64 paketi: `artifacts/depinference-openshift-ai-amd64.vsix`.
+
 ## Önemli ayarlar
 
 | Ayar | Açıklama |
