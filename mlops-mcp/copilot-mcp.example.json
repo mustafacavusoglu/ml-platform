@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "mlops-readmes": {
+      "type": "local",
+      "command": "uvx",
+      "args": [
+        "mlops-readme-mcp",
+        "--config-url",
+        "https://config.example.com/mlops/repos.yml"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "$COPILOT_MCP_GITHUB_TOKEN"
+      },
+      "tools": [
+        "list_repositories",
+        "get_repository_readmes",
+        "refresh_repository_readmes"
+      ]
+    }
+  }
+}

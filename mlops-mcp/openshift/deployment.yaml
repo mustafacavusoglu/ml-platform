@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-readmes-mcp
+  annotations:
+    # Roll out automatically when a new image lands in the ImageStream.
+    image.openshift.io/triggers: >-
+      [{"from":{"kind":"ImageStreamTag","name":"mlops-readme-mcp:latest"},
+      "fieldPath":"spec.template.spec.containers[?(@.name==\"mcp\")].image"}]
+spec:
+  # Stateless HTTP transport: any replica can serve any request.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mlops-readmes-mcp
+  template:
+    metadata:
+      labels:
+        app: mlops-readmes-mcp
+      annotations:
+        alpha.image.policy.openshift.io/resolve-names: "*"
+    spec:
+      containers:
+        - name: mcp
+          image: mlops-readme-mcp:latest
+          args: ["--config", "/app/config/repos.yml"]
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: MCP_TRANSPORT
+              value: http
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-readmes-mcp
+                  key: github-token
+                  optional: true
+            - name: MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mlops-readmes-mcp
+                  key: auth-token
+                  optional: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: mlops-readmes-config
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

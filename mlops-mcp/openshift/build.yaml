@@ -1,0 +1,30 @@
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: mlops-readme-mcp
+---
+# Binary build from the local checkout: oc start-build mlops-readme-mcp --from-dir=. --follow
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: mlops-readme-mcp
+spec:
+  source:
+    type: Binary
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile
+      # Uncomment for a registry mirror:
+      # buildArgs:
+      #   - name: UV_IMAGE
+      #     value: nexus.example.com/astral-sh/uv:python3.13-bookworm-slim
+      #   - name: PYTHON_IMAGE
+      #     value: nexus.example.com/library/python:3.13-slim-bookworm
+  output:
+    to:
+      kind: ImageStreamTag
+      name: mlops-readme-mcp:latest
+  resources:
+    limits:
+      memory: 1Gi

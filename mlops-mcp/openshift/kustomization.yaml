@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/name: mlops-readmes-mcp
+      app.kubernetes.io/part-of: mlops-platform
+    includeSelectors: false
+
+resources:
+  - build.yaml
+  - deployment.yaml
+  - service.yaml
+  - route.yaml
+
+# Editing repos.yml changes the ConfigMap hash and rolls the pods automatically.
+configMapGenerator:
+  - name: mlops-readmes-config
+    files:
+      - repos.yml
+
+# Image built outside the cluster (e.g. CI -> Nexus)? Remove build.yaml above and set:
+# images:
+#   - name: mlops-readme-mcp
+#     newName: nexus.example.com/mlops/mlops-readme-mcp
+#     newTag: "0.1.0"

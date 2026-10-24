@@ -1,0 +1,18 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mlops-readmes-mcp
+  annotations:
+    # First README fetch for all repos can take a while.
+    haproxy.router.openshift.io/timeout: 120s
+    # Optional: limit to the corporate network.
+    # haproxy.router.openshift.io/ip_whitelist: 10.0.0.0/8
+spec:
+  to:
+    kind: Service
+    name: mlops-readmes-mcp
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -1,0 +1,13 @@
+.venv
+.cache
+.git
+.github
+.vscode
+__pycache__
+*.pyc
+*.log
+tests
+docs
+openshift
+registry
+agents
