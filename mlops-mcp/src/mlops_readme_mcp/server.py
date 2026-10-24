@@ -8,6 +8,7 @@ import os
 from urllib.error import URLError
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -33,12 +34,16 @@ def build_app(config: AppConfig) -> MCPServer:
         known = {repo.id for repo in config.repos}
         unknown = [repo_id for repo_id in repo_ids if repo_id not in known]
         if unknown:
-            raise ValueError(f"Unknown repo ids: {', '.join(unknown)}")
+            raise ToolError(f"Unknown repo ids: {', '.join(unknown)}")
         return [repo for repo in config.repos if repo.id in repo_ids]
 
     def fetch(repo: RepoConfig) -> FetchedReadme:
         owner, repo_name = parse_repo_url(repo.url)
-        fetched = fetcher.fetch(repo.id, owner, repo_name, repo.readme_path, repo.branch)
+        try:
+            fetched = fetcher.fetch(repo.id, owner, repo_name, repo.readme_path, repo.branch)
+        except (RuntimeError, URLError) as error:
+            # ToolError messages reach the model; other exceptions are masked by the SDK.
+            raise ToolError(f"Could not fetch README for {repo.id}: {error}") from error
         store.set(fetched)
         return fetched
 
@@ -48,7 +53,7 @@ def build_app(config: AppConfig) -> MCPServer:
             return cached  # type: ignore[return-value]
         try:
             return fetch(repo)
-        except (RuntimeError, URLError) as error:
+        except ToolError as error:
             # A stale README beats no README when GitHub is down or rate limited.
             if cached is None:
                 raise
@@ -101,8 +106,11 @@ def build_app(config: AppConfig) -> MCPServer:
     def readme_resource(repo_id: str) -> str:
         repo = next((repo for repo in config.repos if repo.id == repo_id), None)
         if repo is None:
-            raise ValueError(f"Unknown repo id: {repo_id}")
-        return format_readme(read_readme(repo))
+            raise ResourceError(f"Unknown repo id: {repo_id}")
+        try:
+            return format_readme(read_readme(repo))
+        except ToolError as error:
+            raise ResourceError(str(error)) from error
 
     @app.custom_route(HEALTH_PATH, methods=["GET"])
     async def healthz(_request: Request) -> Response:

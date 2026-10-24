@@ -4,17 +4,28 @@ Bu rehber Python MCP server’ı lokal, OpenShift ve GitHub Copilot tarafında b
 
 ## 1. Ön Koşullar
 
-- `uv` yüklü olmalı: `uv --version`
 - Python 3.11 veya üzeri
+- `pip` (Python ile gelir) ya da `uv`
 - OpenShift kurulumu için `oc` CLI
 - GitHub Copilot erişimi
 - OpenShift remote kurulum için HTTPS route erişimi
 
 ## 2. Lokal Kurulum
 
+pip ile:
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e . pytest
+```
+
+ya da uv ile:
+
 ```bash
 uv sync
 ```
+
+Aşağıdaki `uv run ...` komutlarını pip kurulumunda `uv run` kısmı olmadan çalıştırın (örneğin `mlops-readme-mcp --config repos.yml`).
 
 Server’ı stdio modunda başlat:
 
@@ -39,7 +50,8 @@ uv run mlops-readme-mcp --config-url https://config.example.com/mlops/repos.yml
 ## 3. Test
 
 ```bash
-make test
+make test        # uv
+pytest -q        # pip
 ```
 
 Testler stdio, stateless HTTP, bearer token, cache, GitHub kesintisinde eski cache'e düşme ve merkezi YAML yüklemeyi kapsar. Ağ erişimi gerektirmez.
@@ -146,7 +158,7 @@ Kullanıcılar Copilot cloud agent’ta agent dropdown’ından `mlops-readmes` 
 
 ## 7. Checklist
 
-- [ ] `uv sync` ve `make test` geçti
+- [ ] Kurulum (`pip install -e .` veya `uv sync`) ve testler geçti
 - [ ] `mlops-readmes-mcp` secret'ı (`auth-token`) oluşturuldu
 - [ ] `make deploy` tamamlandı, `curl https://ROUTE/healthz` 200 dönüyor
 - [ ] VS Code'da MCP server Start edildi, Copilot Chat'te README tool'ları görüldü

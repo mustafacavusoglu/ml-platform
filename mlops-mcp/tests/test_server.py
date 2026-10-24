@@ -79,6 +79,9 @@ def test_stale_cache_survives_github_outage(tmp_path):
     config = AppConfig(repos=[RepoConfig("down", "https://github.com/org/down")], cache_path=tmp_path / "cache.json")
     with TestClient(build_http_app(config, "0.0.0.0", "/mcp", None)) as client:
         assert "old readme" in call_tool(client, "get_repository_readmes")["content"][0]["text"]
+        # Without a cached copy the GitHub error must reach the model, not a masked SDK error.
+        result = call_tool(client, "refresh_repository_readmes")
+        assert result["isError"] and "GitHub is down" in result["content"][0]["text"]
 
 
 def test_config_from_url():

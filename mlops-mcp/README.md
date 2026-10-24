@@ -84,20 +84,40 @@ README içeriği doğrudan GitHub'dan çekilir:
 
 ## Hızlı Başlangıç
 
-Gereksinimler: [uv](https://docs.astral.sh/uv/) ve Python 3.11 ya da üstü.
+Gereksinim: **Python 3.11 veya üstü**. Kurulum için standart `pip` ya da `uv` kullanılabilir. uv, `uv.lock`'taki sabitlenmiş sürümleri kurar. pip ise `pyproject.toml`'daki sürüm aralığına uyan en güncel sürümleri kurar.
+
+### Seçenek A: pip ile
 
 ```bash
-uv sync                                   # bağımlılıkları kur
-uv run mlops-readme-mcp --config repos.yml   # stdio modunda başlat
+python3 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -e .                     # geliştirme için: pip install -e . pytest
+
+mlops-readme-mcp --config repos.yml  # stdio modunda başlat
 ```
+
+Şirket içi PyPI mirror'ı (örneğin Nexus) kullanıyorsanız:
+
+```bash
+pip install -e . --index-url https://nexus.example.com/repository/pypi/simple
+```
+
+### Seçenek B: uv ile
+
+```bash
+uv sync                                       # .venv oluşturur, bağımlılıkları uv.lock'tan kurar
+uv run mlops-readme-mcp --config repos.yml    # stdio modunda başlat
+```
+
+### Token ve VS Code
 
 Private repo veya daha yüksek API limiti için token verin:
 
 ```bash
-GITHUB_TOKEN=ghp_xxx uv run mlops-readme-mcp --config repos.yml
+GITHUB_TOKEN=ghp_xxx mlops-readme-mcp --config repos.yml
 ```
 
-VS Code'da projeyi açtığınızda `.vscode/mcp.json` hazır gelir: **MCP: List Servers** → `mlops-readmes` → **Start**. Ardından Copilot Chat'i **Agent** moduna alın.
+VS Code'da projeyi açtığınızda `.vscode/mcp.json` hazır gelir. Bu dosya `./.venv/bin/mlops-readme-mcp` yolunu kullandığı için sanal ortamın adı `.venv` olmalıdır (iki seçenek de bu adı kullanır). **MCP: List Servers** → `mlops-readmes` → **Start** adımlarından sonra Copilot Chat'i **Agent** moduna alın.
 
 ## Yapılandırma
 
@@ -182,12 +202,14 @@ Ayrıntılar, Nexus/CI senaryosu ve sorun giderme: **[docs/openshift-deployment.
 
 ## Geliştirme
 
-```bash
-make test       # testleri çalıştırır (ağ erişimi gerekmez)
-make run        # stdio modunda başlatır
-make run-http   # http modunda başlatır: http://127.0.0.1:8080/mcp
-make image      # Docker image'ını build eder
-```
+| İş | pip (sanal ortam aktifken) | uv / make |
+|---|---|---|
+| Testleri çalıştır (ağ gerekmez) | `pytest -q` | `make test` |
+| stdio modunda başlat | `mlops-readme-mcp --config repos.yml` | `make run` |
+| http modunda başlat | `mlops-readme-mcp --transport http --host 127.0.0.1 --config repos.yml` | `make run-http` |
+| Docker image'ı build et | `docker build -t mlops-readme-mcp:dev .` | `make image` |
+
+HTTP modunda endpoint `http://127.0.0.1:8080/mcp` adresindedir.
 
 Testler şunları kapsar: stdio açılışı, stateless HTTP üzerinden tool çağrıları, bearer token kontrolü, cache davranışı, GitHub kesintisinde eski cache'e düşme ve URL'den config yükleme.
 
