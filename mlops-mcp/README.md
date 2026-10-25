@@ -2,11 +2,18 @@
 
 <!-- mcp-name: com.example/mlops-readmes -->
 
-GitHub repolarının README dosyalarını toplayıp **GitHub Copilot** gibi yapay zekâ asistanlarına [Model Context Protocol (MCP)](https://modelcontextprotocol.io) üzerinden sunan, Python ile yazılmış küçük bir server.
+Şirket içindeki **MLOps platform repolarının** dokümantasyonunu **GitHub Copilot**'a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) üzerinden sunan, Python ile yazılmış küçük bir server.
 
-Copilot'a "MLflow ile Kubeflow arasındaki farkı anlat" ya da "DVC'ye nasıl başlarım?" diye sorduğunuzda, model eğitim verisindeki eski bilgiye değil, repoların **güncel README içeriğine** bakarak cevap verir.
+Data scientist Copilot'a platformla ilgili bir soru sorduğunda, Copilot genel internet bilgisiyle tahmin yürütmez; **sizin template, chart ve image repolarınızın README'lerini** okuyup ona göre cevap verir:
 
-- **Tek dosyadan yönetim:** Hangi repoların okunacağı `repos.yml` içinde tanımlanır.
+> **"Batch model nasıl deploy edilir?"** → Copilot `template-batch` README'sini okur, cron schedule'dan deploy PR'ına kadar adımları anlatır.
+>
+> **"Build nasıl aldırırım?"** → `images-application` ve ilgili template README'sindeki build/pipeline adımlarını getirir.
+>
+> **"Yeni proje açmak ve GPU almak istiyorum"** → `chart-project-onboarding` README'sindeki talep sürecini anlatır.
+
+- **Tek dosyadan yönetim:** Hangi repoların okunacağı ve her reponun neyi anlattığı `repos.yml` içinde tanımlanır.
+- **Doğru repoyu Copilot seçer:** Repo açıklamalarına bakar, yalnızca soruyla ilgili README'leri okur.
 - **Haftalık cache:** README'ler bir kez çekilir, 7 gün boyunca cache'ten sunulur. Böylece GitHub API limiti zorlanmaz.
 - **Dayanıklı:** GitHub'a erişilemezse eski cache'teki README sunulmaya devam eder.
 - **İki çalışma modu:** Lokal (`stdio`) ya da OpenShift'te merkezi servis (`http`, token korumalı, ölçeklenebilir).
@@ -17,6 +24,7 @@ Copilot'a "MLflow ile Kubeflow arasındaki farkı anlat" ya da "DVC'ye nasıl ba
 
 - [Nasıl Çalışır?](#nasıl-çalışır)
 - [Kaynaklar Nereden Geliyor?](#kaynaklar-nereden-geliyor)
+- [Template Repo README'leri Nasıl Yazılmalı?](#template-repo-readmeleri-nasıl-yazılmalı)
 - [Hızlı Başlangıç](#hızlı-başlangıç)
 - [Yapılandırma](#yapılandırma)
 - [Tool'lar](#toollar)
@@ -59,7 +67,16 @@ Hangi repoların okunacağını bu dosya belirler. Server dosyayı açılışta 
 | Şirket geneli | `--config-url https://.../repos.yml`: herkes merkezi tek bir dosyayı kullanır |
 | OpenShift | `openshift/repos.yml` → ConfigMap → pod içinde `/app/config/repos.yml` |
 
-Şu an tanımlı repolar: **MLflow, Kubeflow, Airflow, DVC, Kedro, Evidently**. Bunların hepsi github.com'daki açık kaynak projelerdir.
+`repos.yml` şirket platformunun repo yapısına göre hazırlanmış bir şablondur. `your-org` yerine kendi organization adınızı ve gerçek repo adlarını yazmanız gerekir:
+
+| Grup | Repolar (`id`) | Cevapladığı sorular |
+|---|---|---|
+| Template'ler | `template-ml`, `template-batch`, `template-vllm`, `template-custom-serve` | Online/batch/LLM deploy, build, pipeline |
+| Helm chart'ları | `chart-project-onboarding`, `chart-user-onboarding`, `chart-custom` | Proje açma, kullanıcı ekleme, quota, GPU, özel chart |
+| Image'lar | `images-notebooks`, `images-application` | Workbench image'ları, paket ekleme, image build ve Nexus |
+| Platform araçları | `ml-platform` | VS Code extension'ları, deployment PR akışı |
+
+**`description` alanı en önemli alandır.** Copilot hangi README'yi okuyacağına bu açıklamalara bakarak karar verir. Açıklamaları kullanıcının soracağı kelimelerle yazın ("batch", "build", "GPU", "cron", "endpoint" gibi).
 
 ### 2. İçerik: GitHub REST API
 
@@ -81,6 +98,40 @@ README içeriği doğrudan GitHub'dan çekilir:
 - **OpenShift:** `/tmp/readmes.json`. Her pod'un kendi cache'i vardır ve pod yeniden başlayınca silinir. İlk istekte README'ler tekrar çekilir.
 
 `refresh_repository_readmes` tool'u cache süresini beklemeden README'leri yeniden çeker.
+
+## Template Repo README'leri Nasıl Yazılmalı?
+
+MCP yalnızca README'de yazanı Copilot'a aktarır. Bu yüzden cevapların kalitesi README'lerin kalitesine bağlıdır. Her template ve chart reposunda şu başlıkların olması önerilir:
+
+```markdown
+# template-batch
+
+Tek cümle: bu template ne işe yarar, ne zaman kullanılır (ne zaman kullanılmaz).
+
+## Hızlı Başlangıç
+Repoyu kopyalama / yeni proje oluşturma adımları.
+
+## Model Nasıl Deploy Edilir?
+Adım adım: hangi dosya değişir, hangi PR açılır, kim onaylar, nerede takip edilir.
+
+## Build Nasıl Alınır?
+Pipeline adı, nasıl tetiklenir, image nereye push edilir (Nexus yolu), tag kuralı.
+
+## Yapılandırma
+values.yaml / config alanları tablosu: alan, açıklama, varsayılan, örnek.
+
+## Sık Karşılaşılan Hatalar
+Hata mesajı → sebebi → çözümü.
+
+## Destek
+Takım kanalı, sorumlu ekip.
+```
+
+İpuçları:
+
+- **Komutları ve dosya yollarını tam yazın.** Copilot bunları olduğu gibi kullanıcıya verir.
+- **Başlıkları soru gibi yazın** ("Batch model nasıl deploy edilir?"). Copilot soruyla eşleştirmeyi kolay yapar.
+- **README çok uzunsa** asıl anlatımı `docs/USAGE.md` gibi tek bir dosyaya koyup `repos.yml`'de `readme_path` ile o dosyayı gösterebilirsiniz. Aynı repoyu farklı `id`'lerle birden fazla dosya için de ekleyebilirsiniz (bkz. `examples/repos.demo.yml`).
 
 ## Hızlı Başlangıç
 
@@ -109,6 +160,14 @@ uv sync                                       # .venv oluşturur, bağımlılık
 uv run mlops-readme-mcp --config repos.yml    # stdio modunda başlat
 ```
 
+### Hemen denemek için
+
+`repos.yml`'deki şirket adresleri doldurulana kadar herkese açık repolarla çalışan örneği kullanabilirsiniz:
+
+```bash
+mlops-readme-mcp --config examples/repos.demo.yml
+```
+
 ### Token ve VS Code
 
 Private repo veya daha yüksek API limiti için token verin:
@@ -117,7 +176,7 @@ Private repo veya daha yüksek API limiti için token verin:
 GITHUB_TOKEN=ghp_xxx mlops-readme-mcp --config repos.yml
 ```
 
-VS Code'da projeyi açtığınızda `.vscode/mcp.json` hazır gelir. Bu dosya `./.venv/bin/mlops-readme-mcp` yolunu kullandığı için sanal ortamın adı `.venv` olmalıdır (iki seçenek de bu adı kullanır). **MCP: List Servers** → `mlops-readmes` → **Start** adımlarından sonra Copilot Chat'i **Agent** moduna alın.
+VS Code'da projeyi açtığınızda `.vscode/mcp.json` hazır gelir ve demo config'i (`examples/repos.demo.yml`) kullanır. Şirket repoları `repos.yml`'e girildikten sonra buradaki yolu `./repos.yml` yapın. Dosya `./.venv/bin/mlops-readme-mcp` yolunu kullandığı için sanal ortamın adı `.venv` olmalıdır (iki seçenek de bu adı kullanır). **MCP: List Servers** → `mlops-readmes` → **Start** adımlarından sonra Copilot Chat'i **Agent** moduna alın.
 
 ## Yapılandırma
 
@@ -152,8 +211,8 @@ repos:
 
 | Tool | Ne yapar? |
 |---|---|
-| `list_repositories` | Tanımlı repoları, açıklamalarını ve cache durumlarını (son çekilme zamanı, süresi dolmuş mu) listeler. |
-| `get_repository_readmes` | Seçilen repoların README'lerini döner. `repo_ids` verilmezse tüm repoların README'lerini döner. |
+| `list_repositories` | Platform repolarını, neyi anlattıklarını (`description`) ve cache durumlarını listeler. Copilot doğru repoyu seçmek için önce bunu çağırır. |
+| `get_repository_readmes` | Seçilen repoların dokümanını (README) döner. `repo_ids` verilmezse tüm repoların dokümanını döner. |
 | `refresh_repository_readmes` | Cache'i beklemeden README'leri GitHub'dan yeniden çeker. |
 
 Her repo ayrıca `readme://<repo-id>` adresinde MCP **resource** olarak da sunulur. Copilot cloud agent şimdilik yalnızca tool'ları destekler.
@@ -227,13 +286,14 @@ mlops-mcp/
 ├── docs/              # Kurulum ve dağıtım rehberleri
 ├── registry/          # MCP Registry metadata'sı
 ├── agents/            # GitHub Copilot custom agent tanımı
-├── repos.yml          # Lokal repo listesi
+├── examples/          # Herkese açık repolarla çalışan demo config
+├── repos.yml          # Şirket repo listesi (şablon)
 └── Dockerfile
 ```
 
 ## Bilinen Sınırlar
 
-- **Yalnızca github.com:** GitHub Enterprise Server ve Azure DevOps repoları henüz desteklenmiyor.
+- **Yalnızca github.com:** Platform repoları GitHub Enterprise Server'da ya da Azure DevOps'taysa okunamaz. Bu durumda `github.py`'a ilgili API desteğinin eklenmesi gerekir.
 - **Yalnızca README:** `docs/` klasörü gibi diğer dokümanlar okunmuyor. Tek bir dosya `readme_path` ile seçilebilir.
 - **Cache pod başına:** OpenShift'te her pod GitHub'a ayrı istek atar ve cache pod yeniden başlayınca silinir. Repo sayısı az olduğu sürece bu sorun yaratmaz.
-- **Uzun cevaplar:** `get_repository_readmes` parametresiz çağrılırsa tüm README'ler tek cevapta döner (MLflow README'si tek başına ~32 KB). Belirli repolar için `repo_ids` kullanın.
+- **Uzun cevaplar:** `get_repository_readmes` parametresiz çağrılırsa tüm README'ler tek cevapta döner ve uzun README'ler Copilot'un bağlamını doldurur. Copilot normalde önce `list_repositories` ile seçim yapar; README'leri odaklı tutmak yine de önemlidir.

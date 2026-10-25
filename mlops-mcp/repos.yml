@@ -1,30 +1,76 @@
-# Repo adreslerini bu dosyadan değiştirebilirsiniz.
-# Her hafta bir cache TTL dolduğunda README'ler GitHub API'den yeniden çekilir.
+# Şirket içi MLOps platform repoları.
+#
+# Copilot önce list_repositories ile bu listeyi ve açıklamaları görür, soruyla ilgili repoları
+# seçer, sonra yalnızca onların README'sini okur. Bu yüzden:
+#   - description alanını kullanıcının soracağı kelimelerle yazın ("batch", "build", "deploy", "GPU"...).
+#   - Her repo README'sinde "nasıl yapılır" adımları olsun (bkz. README.md → Template repo README'leri).
+#
+# your-org yerine GitHub organization adınızı yazın. Private repolar için GITHUB_TOKEN gerekir.
+# Tek bir dosya okunacaksa readme_path, belirli bir branch için branch kullanın.
+
 cache:
   ttl_days: 7
   path: .cache/readmes.json
 
 repos:
-  - id: mlflow
-    url: https://github.com/mlflow/mlflow
-    description: MLflow
+  # ---- Template'ler: data scientist'in yeni proje başlatırken kopyaladığı repolar
+  - id: template-ml
+    url: https://github.com/your-org/template-ml
+    description: >-
+      Online model servisi template'i (KServe InferenceService). Model eğitme, MLflow'a kaydetme,
+      online deploy, endpoint'e istek atma, image build ve pipeline tetikleme.
 
-  - id: kubeflow
-    url: https://github.com/kubeflow/kubeflow
-    description: Kubeflow
+  - id: template-batch
+    url: https://github.com/your-org/template-batch
+    description: >-
+      Batch model template'i (CronJob). Batch scoring job yazma, cron schedule, input/output yolları,
+      batch deploy, image build alma ve job loglarını izleme.
 
-  - id: airflow
-    url: https://github.com/apache/airflow
-    description: Apache Airflow
+  - id: template-vllm
+    url: https://github.com/your-org/template-vllm
+    description: >-
+      LLM servis template'i (vLLM). Hugging Face modelini GPU/MIG ile deploy etme, OpenAI uyumlu
+      endpoint, LiteLLM'e ekleme, model ağırlıklarını cache'leme.
 
-  - id: dvc
-    url: https://github.com/iterative/dvc
-    description: DVC
+  - id: template-custom-serve
+    url: https://github.com/your-org/template-custom-serve
+    description: >-
+      Kendi FastAPI/Flask servisini deploy etme template'i. Dockerfile, health check, kaynak
+      ayarları, route açma.
 
-  - id: kedro
-    url: https://github.com/kedro-org/kedro
-    description: Kedro
+  # ---- Helm chart'ları: platform ekibinin onboarding ve özel ihtiyaçlar için kullandığı chart'lar
+  - id: chart-project-onboarding
+    url: https://github.com/your-org/project-onboarding
+    description: >-
+      Yeni proje/namespace açma. Proje talebi, quota, GPU hakkı, MLflow experiment, secret'lar,
+      Azure DevOps/GitHub repo bağlantısı.
 
-  - id: evidently
-    url: https://github.com/evidentlyai/evidently
-    description: Evidently AI
+  - id: chart-user-onboarding
+    url: https://github.com/your-org/user-onboarding
+    description: >-
+      Projeye kullanıcı ekleme, rol/yetki verme, workbench (notebook) açma, erişim sorunları.
+
+  - id: chart-custom
+    url: https://github.com/your-org/custom-charts
+    description: >-
+      Template'lerin karşılamadığı durumlar için özel Helm chart'ları ve values.yaml örnekleri.
+
+  # ---- Image'lar
+  - id: images-notebooks
+    url: https://github.com/your-org/notebook-images
+    description: >-
+      VS Code ve Jupyter workbench image'ları. Hangi image'da hangi kütüphaneler var, yeni paket
+      ekleme talebi, özel notebook image'ı build etme.
+
+  - id: images-application
+    url: https://github.com/your-org/application-images
+    description: >-
+      ML uygulamaları için base image'lar. Image build alma, Nexus'a push, tag/versiyonlama,
+      güvenlik taraması.
+
+  # ---- Platform araçları
+  - id: ml-platform
+    url: https://github.com/your-org/ml-platform
+    description: >-
+      Platformun genel tanıtımı ve VS Code extension'ları (MLflow Runs, DepInference).
+      Workbench'ten run seçip online/batch deployment PR'ı açma.

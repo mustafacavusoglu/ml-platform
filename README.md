@@ -8,7 +8,7 @@ Bu repo birbirinden bağımsız kurulabilen üç bileşen içerir. Hepsinin orta
 |---|---|---|---|
 | **MLflow Runs** | Namespace'e ait MLflow run'larını VS Code içinde listeler, yan yana karşılaştırır, metrikleri görselleştirir. | VS Code extension (TypeScript) | [`extensions/mlflow-code`](extensions/mlflow-code) |
 | **DepInference** | MLflow'daki bir run'ı seçip GitOps reposuna online (KServe) ya da batch (CronJob) deployment PR'ı açar. Model hazır olunca playground'dan test edilir. | VS Code extension (TypeScript) | [`extensions/DepInference`](extensions/DepInference) |
-| **MLOps README MCP** | MLOps araçlarının güncel README'lerini GitHub Copilot'a MCP üzerinden sunar. | Python MCP server | [`mlops-mcp`](mlops-mcp) |
+| **MLOps README MCP** | Şirket içi template, chart ve image repolarının dokümanlarını GitHub Copilot'a MCP üzerinden sunar. "Batch model nasıl deploy edilir?" gibi soruları platformun kendi dokümanıyla cevaplatır. | Python MCP server | [`mlops-mcp`](mlops-mcp) |
 
 ---
 
@@ -31,7 +31,7 @@ flowchart LR
     GO -- deploy --> KS[KServe / CronJob]
     DI -- durum + inference testi --> KS
     CP -- MCP --> MCP[MLOps README MCP<br/>OpenShift]
-    MCP -- README --> GH[(GitHub)]
+    MCP -- README --> GH[(GitHub<br/>platform repoları)]
 ```
 
 **Tipik akış:**
@@ -40,7 +40,7 @@ flowchart LR
 2. **MLflow Runs** ile run'ları karşılaştırır ve en iyisini seçer.
 3. **DepInference** formundan run'ı ve kaynakları (CPU/GPU, MIG profili) seçer. Extension GitOps reposuna PR açar.
 4. PR merge edilince model deploy edilir. DepInference durumu takip eder; model `Ready` olunca playground'dan istek atılır.
-5. Bu sırada **Copilot**, MLOps README MCP sayesinde MLflow, Kubeflow, DVC gibi araçlar hakkındaki soruları güncel dokümana bakarak cevaplar.
+5. Takıldığı her adımda ("build nasıl alınır?", "GPU nasıl istenir?") **Copilot**'a sorar. Copilot, MLOps README MCP sayesinde platformun kendi template ve chart dokümanlarına bakarak cevap verir.
 
 ## Hızlı Başlangıç
 

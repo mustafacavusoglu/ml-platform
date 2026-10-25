@@ -1,0 +1,32 @@
+# Hemen denemek için herkese açık repolarla çalışan örnek: mlops-readme-mcp --config examples/repos.demo.yml
+
+cache:
+  ttl_days: 7
+  path: ../.cache/demo-readmes.json
+
+repos:
+  - id: ml-platform
+    url: https://github.com/mustafacavusoglu/ml-platform
+    description: Platformun genel tanıtımı, bileşenler ve hızlı başlangıç
+
+  - id: depinference
+    url: https://github.com/mustafacavusoglu/ml-platform
+    readme_path: extensions/DepInference/README.md
+    description: Online (KServe) ve batch (CronJob) model deployment, GitOps PR akışı, values.yaml sözleşmesi
+
+  - id: mlflow-runs
+    url: https://github.com/mustafacavusoglu/ml-platform
+    readme_path: extensions/mlflow-code/README.md
+    description: MLflow run'larını VS Code'da listeleme ve karşılaştırma, MLflow secret kurulumu
+
+  - id: kueue-system
+    url: https://github.com/mustafacavusoglu/kueue-system
+    description: OpenShift OAuth destekli FIFO kuyruk yönetimi
+
+  - id: axon
+    url: https://github.com/mustafacavusoglu/axon
+    description: Triton uyumlu Rust model server (ONNX Runtime, CPU ve NVIDIA GPU)
+
+  - id: mlops-chatbot
+    url: https://github.com/mustafacavusoglu/mlops-chatbot
+    description: LangGraph + Qdrant MLOps asistanı, OpenShift deployment

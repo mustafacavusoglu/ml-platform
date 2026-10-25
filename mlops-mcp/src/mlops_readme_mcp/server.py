@@ -21,9 +21,21 @@ log = logging.getLogger("mlops_readme_mcp")
 
 HEALTH_PATH = "/healthz"
 
+INSTRUCTIONS = """\
+Bu server şirket içi MLOps platform repolarının dokümantasyonunu sunar: proje/kullanıcı
+onboarding chart'ları, ml/batch/vllm/custom-serve template'leri, notebook ve uygulama
+image'ları ve platform araçları.
+
+Kullanıcı platformda bir işin nasıl yapılacağını sorduğunda (ör. "batch model nasıl
+deploy edilir?", "build nasıl aldırılır?", "yeni proje nasıl açılır?"):
+1. list_repositories ile repoları ve açıklamalarını gör, soruyla ilgili olanları seç.
+2. get_repository_readmes ile yalnızca o repoların dokümanını al.
+3. Cevabı bu dokümana dayandır, hangi repodan aldığını belirt. Dokümanda olmayan adımı uydurma.
+"""
+
 
 def build_app(config: AppConfig) -> MCPServer:
-    app = MCPServer("mlops-readmes", version=__version__)
+    app = MCPServer("mlops-readmes", version=__version__, instructions=INSTRUCTIONS)
     store = ReadmeCache(config.cache_path, config.ttl_days)
     fetcher = GithubReadmeFetcher(os.getenv("GITHUB_TOKEN"))
 
@@ -70,7 +82,8 @@ def build_app(config: AppConfig) -> MCPServer:
 
     @app.tool()
     def list_repositories() -> str:
-        """List configured repositories with their description and README cache state."""
+        """List the internal MLOps platform repos (templates, charts, images, tools) with a
+        description of what each covers. Call this first to pick the repos relevant to the question."""
         rows = []
         for repo in config.repos:
             cached = store.get(repo.id)
@@ -87,7 +100,8 @@ def build_app(config: AppConfig) -> MCPServer:
 
     @app.tool()
     def get_repository_readmes(repo_ids: list[str] | None = None) -> str:
-        """Return README content for the given repo ids (all repos when omitted)."""
+        """Return the documentation (README) of the given repo ids: how to deploy, build, onboard
+        and configure with that template or tool. Pass only the relevant ids; omitting them returns all."""
         repos = resolve_repos(repo_ids)
         return "\n\n".join(format_readme(read_readme(repo)) for repo in repos)
 

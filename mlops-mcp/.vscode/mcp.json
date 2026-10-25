@@ -3,7 +3,7 @@
     "mlops-readmes": {
       "type": "stdio",
       "command": "./.venv/bin/mlops-readme-mcp",
-      "args": ["--config", "./repos.yml"]
+      "args": ["--config", "./examples/repos.demo.yml"]
     }
   }
 }
