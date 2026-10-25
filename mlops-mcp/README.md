@@ -226,15 +226,53 @@ HTTP modunda server şöyle çalışır:
 - **Token koruması:** `MCP_AUTH_TOKEN` tanımlıysa token'sız istekler `401` ile reddedilir.
 - **OpenShift uyumlu image:** Rastgele UID ve read-only dosya sistemiyle çalışır.
 
+### Adım adım
+
+**1. Repo listesini doldurun.** `openshift/repos.yml` içindeki `your-org` adreslerini şirketin gerçek GitHub organization ve repo adlarıyla değiştirin ve `description` alanlarını gözden geçirin.
+
+**2. Cluster'a girin ve namespace'i seçin.**
+
 ```bash
-oc project <namespace>
+oc login <cluster-api-url>
+oc project <namespace>        # yoksa: oc new-project <namespace>
+```
+
+**3. Secret'ı oluşturun.** Şirket repoları private ise `github-token` zorunludur. Token, okunacak repolarda `Contents: Read` yetkisine sahip olmalı.
+
+```bash
 oc create secret generic mlops-readmes-mcp \
   --from-literal=auth-token="$(openssl rand -hex 32)" \
-  --from-literal=github-token=ghp_xxx      # opsiyonel
+  --from-literal=github-token=<github-token>
+```
+
+**4. Kurun.** `mlops-mcp` klasöründe:
+
+```bash
 make deploy
 ```
 
-`make deploy` Kustomize paketini uygular (`oc apply -k openshift/`), image'ı cluster içinde build eder ve rollout'un bitmesini bekler. Repo listesini değiştirmek için `openshift/repos.yml`'i düzenleyip `oc apply -k openshift/` çalıştırmanız yeterli. Pod'lar otomatik yenilenir.
+Bu komut Kustomize paketini uygular (`oc apply -k openshift/`), image'ı cluster içinde build eder (`oc start-build`) ve pod'lar hazır olana kadar bekler. İlk build sırasında pod'ların kısa süre `ImagePullBackOff` göstermesi normaldir.
+
+**5. Kontrol edin.**
+
+```bash
+ROUTE=$(oc get route mlops-readmes-mcp -o jsonpath='{.spec.host}')
+curl https://$ROUTE/healthz          # {"status":"ok",...}
+echo "MCP adresi: https://$ROUTE/mcp"
+```
+
+**6. Copilot'u bağlayın.** MCP adresini ve `auth-token` değerini kullanıcılarla paylaşın; VS Code ayarı için [Copilot Bağlantısı](#copilot-bağlantısı) bölümüne bakın. Token'ı okumak için:
+
+```bash
+oc get secret mlops-readmes-mcp -o jsonpath='{.data.auth-token}' | base64 -d
+```
+
+**Sonradan repo eklemek** için `openshift/repos.yml`'i düzenleyip `oc apply -k openshift/` çalıştırın. Pod'lar otomatik yenilenir.
+
+### Kurumsal ağda dikkat edilecekler
+
+- **Proxy:** Cluster dışarıya proxy ile çıkıyorsa Deployment'a `HTTPS_PROXY` / `NO_PROXY` ekleyin.
+- **Build sırasında erişim:** Build `ghcr.io`, `docker.io` ve `pypi.org` adreslerine erişir. Erişim yoksa base image'lar için Nexus mirror'ı build arg olarak verilebilir ya da image CI'da build edilip Nexus'a push edilebilir.
 
 Ayrıntılar, Nexus/CI senaryosu ve sorun giderme: **[docs/openshift-deployment.md](docs/openshift-deployment.md)**
 

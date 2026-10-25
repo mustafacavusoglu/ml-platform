@@ -100,7 +100,7 @@ MCP: List Servers
 
 ### 5.2 VS Code ile Remote OpenShift Server
 
-Token'lı HTTP bağlantı örneği için [openshift-deployment.md → Copilot Bağlantısı](openshift-deployment.md#5-copilot-bağlantısı).
+Token'lı HTTP bağlantı örneği için [openshift-deployment.md → Copilot Bağlantısı](openshift-deployment.md#6-copilot-bağlantısı).
 
 ### 5.3 GitHub.com Repo Ayarları
 
